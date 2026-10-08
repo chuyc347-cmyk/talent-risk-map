@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人才風險地圖|中磊電子 關鍵職位盤點 課後工具</title>
+<meta name="description" content="中磊電子主管訓練課後工具:輸入部門、職位與「職位重要性 × 人才風險」分數,自動產生四象限人才風險地圖,以紅黃綠燈號辨識優先處理職位。">
+<style>
+:root{
+  --brand:#005BAC;          /* 品牌藍 */
+  --paper:#F3F6FA;
+  --card:#FFFFFF;
+  --ink:#1B2430;
+  --ink-2:#4F5E6E;
+  --ink-3:#78889A;
+  --line:#D9E1EA;
+  --accent:#005BAC;
+  --accent-ink:#004C8F;
+  --accent-soft:#E3EEF8;
+  --good:#177245;
+  --good-soft:#E1F0E6;
+  --warn:#9A6A12;
+  --warn-soft:#F6ECD6;
+  --poor:#A93F36;
+  --poor-soft:#F6E3E0;
+  --neutral:#78889A;
+  --neutral-soft:#EAEFF4;
+  --track:#E7EDF3;
+  --shadow:0 1px 2px rgba(23,36,49,.06),0 8px 24px rgba(23,36,49,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --brand:#2B7FD6;
+    --paper:#0E141B; --card:#161E27; --ink:#E6EBF1; --ink-2:#A0AEBD; --ink-3:#7B8B9B;
+    --line:#2A3745; --accent:#4D9EE8; --accent-ink:#7FB9F0; --accent-soft:#1A2A3B;
+    --good:#5FBE8C; --good-soft:#1B2F24; --warn:#D9A441; --warn-soft:#332A17;
+    --poor:#E08078; --poor-soft:#35201E; --neutral:#7B8B9B; --neutral-soft:#212B36;
+    --track:#232F3C;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --brand:#2B7FD6;
+  --paper:#0E141B; --card:#161E27; --ink:#E6EBF1; --ink-2:#A0AEBD; --ink-3:#7B8B9B;
+  --line:#2A3745; --accent:#4D9EE8; --accent-ink:#7FB9F0; --accent-soft:#1A2A3B;
+  --good:#5FBE8C; --good-soft:#1B2F24; --warn:#D9A441; --warn-soft:#332A17;
+  --poor:#E08078; --poor-soft:#35201E; --neutral:#7B8B9B; --neutral-soft:#212B36;
+  --track:#232F3C;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  font-size:16px; line-height:1.75;
+}
+.wrap{max-width:960px; margin:0 auto; padding:0 20px}
+a{color:var(--accent-ink)}
+h1,h2,h3{font-family:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif; line-height:1.3; text-wrap:balance; margin:0}
+button{font:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none !important; animation:none !important}
+}
+
+/* ---------- brand bar ---------- */
+.brandbar{display:flex; align-items:center; gap:12px; padding:18px 20px 0}
+.brand-mark{
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--brand); color:#fff;
+  font-weight:800; font-size:.95rem; letter-spacing:.06em;
+  padding:6px 10px; border-radius:6px; line-height:1;
+}
+.brand-name{font-weight:700; letter-spacing:.02em}
+.brand-name small{display:block; font-weight:400; font-size:.7rem; letter-spacing:.14em; color:var(--ink-3); text-transform:uppercase}
+.brandbar .course-tag{margin-left:auto; color:var(--ink-3); font-size:.8rem; letter-spacing:.08em; white-space:nowrap}
+@media (max-width:560px){ .brandbar .course-tag{display:none} }
+
+/* ---------- header ---------- */
+.site-head{padding:40px 0 8px}
+.eyebrow{font-size:.8rem; letter-spacing:.18em; color:var(--accent-ink); text-transform:uppercase; margin:0 0 14px; font-weight:600}
+.site-head h1{font-size:2.3rem; font-weight:700}
+.lede{color:var(--ink-2); max-width:40em; margin:14px 0 0}
+
+/* ---------- input card ---------- */
+.input-card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); padding:24px; margin:28px 0 0;
+}
+.field-label{display:block; font-weight:600; margin-bottom:8px}
+.field-label small{font-weight:400; color:var(--ink-3); margin-left:.5em}
+input[type="text"], input[type="number"]{
+  background:var(--paper); color:var(--ink);
+  border:1px solid var(--line); border-radius:10px; padding:10px 14px;
+  font:inherit; width:100%;
+}
+input:focus{outline:2px solid var(--accent); outline-offset:0; border-color:transparent}
+#deptName{max-width:24em}
+.rows-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:24px 0 8px}
+.rows-head .hint{color:var(--ink-3); font-size:.85rem}
+
+.table-scroll{overflow-x:auto}
+table.entry{width:100%; border-collapse:collapse; min-width:560px}
+table.entry th{
+  text-align:left; font-size:.82rem; letter-spacing:.06em; color:var(--ink-3);
+  font-weight:600; padding:6px 10px 6px 0; border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+table.entry th small{font-weight:400; letter-spacing:0}
+table.entry td{padding:8px 10px 0 0; vertical-align:top}
+table.entry td.num-col{width:9.5em}
+table.entry td.del-col{width:3em; padding-top:12px}
+.del-btn{
+  border:none; background:transparent; color:var(--ink-3);
+  font-size:1.1rem; line-height:1; padding:6px; border-radius:6px;
+}
+.del-btn:hover{color:var(--poor); background:var(--poor-soft)}
+.field-err{outline:2px solid var(--poor) !important}
+.err-msg{color:var(--poor); font-size:.85rem; margin:10px 0 0; display:none}
+
+.actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px}
+.btn{border-radius:10px; padding:10px 20px; border:1px solid transparent; font-weight:600; transition:filter .15s}
+.btn.primary{background:var(--accent); color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0B1420}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn.primary{color:#0B1420} }
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--accent-ink); border-color:var(--line)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.privacy{color:var(--ink-3); font-size:.85rem; margin:14px 0 0}
+
+/* ---------- result ---------- */
+#result{margin-top:36px; display:none}
+.chart-card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); padding:26px; margin-bottom:26px;
+}
+.chart-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:6px}
+.chart-head h2{font-size:1.4rem}
+.chart-head .dept-tag{color:var(--ink-3); font-size:.9rem}
+.chart-box{position:relative; margin-top:10px}
+.chart-box svg{display:block; width:100%; height:auto}
+.tooltip{
+  position:absolute; pointer-events:none; z-index:5; display:none;
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:10px 14px; font-size:.85rem; line-height:1.6;
+  max-width:240px;
+}
+.tooltip .tt-name{font-weight:700}
+.tooltip .tt-quad{font-weight:600}
+.tooltip .tt-act{color:var(--ink-2)}
+
+/* legend */
+.legend{display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 0 0; font-size:.85rem; color:var(--ink-2)}
+.legend .key{display:inline-flex; align-items:center; gap:7px; white-space:nowrap}
+.legend .dot{width:11px; height:11px; border-radius:50%; flex:0 0 auto}
+.legend .dot.q-red{background:var(--poor)}
+.legend .dot.q-yellow{background:var(--warn)}
+.legend .dot.q-green{background:var(--good)}
+.legend .dot.q-gray{background:var(--neutral)}
+.legend-note{color:var(--ink-3); font-size:.8rem; margin:6px 0 0}
+
+/* ---------- summary table ---------- */
+.summary-card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); padding:26px;
+}
+.summary-card h2{font-size:1.4rem; margin-bottom:4px}
+.summary-card .sub{color:var(--ink-3); font-size:.85rem; margin:0 0 14px}
+table.summary{width:100%; border-collapse:collapse; min-width:640px}
+table.summary th{
+  text-align:left; font-size:.82rem; letter-spacing:.06em; color:var(--ink-3);
+  font-weight:600; padding:8px 12px 8px 0; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+table.summary td{padding:10px 12px 10px 0; border-bottom:1px solid var(--line); vertical-align:top}
+table.summary td.score{font-variant-numeric:tabular-nums; white-space:nowrap}
+table.summary tr:last-child td{border-bottom:none}
+.pill{
+  display:inline-flex; align-items:center; gap:6px;
+  border-radius:999px; padding:2px 12px; font-size:.82rem; font-weight:600; white-space:nowrap;
+}
+.pill::before{content:""; width:7px; height:7px; border-radius:50%; background:currentColor}
+.pill.q-red{background:var(--poor-soft); color:var(--poor)}
+.pill.q-yellow{background:var(--warn-soft); color:var(--warn)}
+.pill.q-green{background:var(--good-soft); color:var(--good)}
+.pill.q-gray{background:var(--neutral-soft); color:var(--neutral)}
+.action-cell{color:var(--ink-2); font-size:.92rem}
+
+/* ---------- footer ---------- */
+.site-foot{padding:36px 0 44px; color:var(--ink-3); font-size:.85rem}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff; color:#000}
+  .brandbar,.site-head,.input-card,.actions,.site-foot,.no-print{display:none !important}
+  #result{display:block !important; margin-top:0}
+  .chart-card,.summary-card{box-shadow:none; border-color:#bbb; break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="brandbar">
+  <span class="brand-mark">Sercomm</span>
+  <span class="brand-name">中磊電子<small>Talent Risk Map</small></span>
+  <span class="course-tag">關鍵職位盤點|課後練習工具</span>
+</header>
+
+<div class="wrap">
+
+<section class="site-head">
+  <p class="eyebrow">Talent Risk Map</p>
+  <h1>人才風險地圖產生器</h1>
+  <p class="lede">
+    輸入部門名稱與各職位的「職位重要性」(X 軸) 與「人才風險」(Y 軸) 分數,
+    即可產生該部門的四象限人才風險地圖:<strong>紅色=高風險(最危險區)</strong>、
+    <strong>黃色=中風險(可觀察)</strong>、<strong>綠色=低風險(穩定區)</strong>,
+    灰色為一般區,協助你快速看出哪些職位最需要優先處理。
+  </p>
+</section>
+
+<section class="input-card" aria-label="輸入區">
+  <label class="field-label" for="deptName">部門名稱</label>
+  <input type="text" id="deptName" placeholder="例:HW Center" autocomplete="off">
+
+  <div class="rows-head">
+    <span class="field-label" style="margin:0">職位清單</span>
+    <span class="hint">X 軸來自步驟一「職位重要性」;Y 軸=步驟二 Risk × 接班風險。15 分(含)以上視為「高」。</span>
+  </div>
+
+  <div class="table-scroll">
+    <table class="entry" aria-label="職位輸入表">
+      <thead>
+        <tr>
+          <th>職位名稱</th>
+          <th>職位重要性 <small>(X,5~25)</small></th>
+          <th>人才風險 <small>(Y,5~25)</small></th>
+          <th><span class="sr-only">刪除</span></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <p class="err-msg" id="errMsg"></p>
+
+  <div class="actions">
+    <button class="btn primary" id="drawBtn">產生人才風險地圖</button>
+    <button class="btn ghost" id="addRowBtn">+ 新增職位</button>
+    <button class="btn ghost" id="sampleBtn">載入範例(HW Center)</button>
+    <button class="btn ghost" id="clearBtn">清除重填</button>
+  </div>
+  <p class="privacy">所有計算皆在瀏覽器內完成,輸入內容不上傳、不儲存。</p>
+</section>
+
+<section id="result" aria-live="polite">
+  <div class="chart-card">
+    <div class="chart-head">
+      <h2>人才風險地圖</h2>
+      <span class="dept-tag" id="deptTag"></span>
+    </div>
+    <div class="chart-box" id="chartBox">
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="legend" aria-hidden="false">
+      <span class="key"><span class="dot q-red"></span>紅色=高風險 最危險區(高重要 × 高風險)</span>
+      <span class="key"><span class="dot q-yellow"></span>黃色=中風險 可觀察(低重要 × 高風險)</span>
+      <span class="key"><span class="dot q-green"></span>綠色=低風險 穩定區(高重要 × 低風險)</span>
+      <span class="key"><span class="dot q-gray"></span>灰色 一般區(低重要 × 低風險)</span>
+    </div>
+    <p class="legend-note">象限分界:兩軸皆以 15 分為界,15 分(含)以上視為「高」。將滑鼠移到圓點上可查看各職位明細。</p>
+    <div class="actions no-print">
+      <button class="btn ghost" id="pngBtn">下載 PNG 圖檔</button>
+      <button class="btn ghost" id="printBtn">列印/存成 PDF</button>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <h2>職位風險摘要</h2>
+    <p class="sub" id="summarySub"></p>
+    <div class="table-scroll">
+      <table class="summary" id="summaryTable">
+        <thead>
+          <tr>
+            <th>優先序</th><th>職位名稱</th><th>職位重要性 (X)</th><th>人才風險 (Y)</th><th>象限</th><th>建議行動</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<footer class="site-foot">
+  <div class="wrap">
+    分數僅反映填入當下的盤點判斷;象限與建議行動供主管討論參考,實際留才與接班安排請與 HR 共同確認。
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- quadrant definitions ---------- */
+var MID = 15, MAXV = 25;
+var QUAD = {
+  red:    { name:"最危險區", risk:"高風險", cls:"q-red",    order:1,
+            action:"優先處理:接班人、備援、知識移轉、留才" },
+  yellow: { name:"可觀察",   risk:"中風險", cls:"q-yellow", order:2,
+            action:"視情況處理:不一定馬上投入資源,但要降低單點依賴" },
+  green:  { name:"穩定區",   risk:"低風險", cls:"q-green",  order:3,
+            action:"持續培養與保護" },
+  gray:   { name:"一般區",   risk:"—",     cls:"q-gray",   order:4,
+            action:"Routine 管理" }
+};
+function quadOf(x,y){
+  if(x>=MID && y>=MID) return "red";
+  if(x<MID  && y>=MID) return "yellow";
+  if(x>=MID && y<MID)  return "green";
+  return "gray";
+}
+function cssColor(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function quadFill(key){
+  return { red:cssColor("--poor"), yellow:cssColor("--warn"),
+           green:cssColor("--good"), gray:cssColor("--neutral") }[key];
+}
+function quadSoft(key){
+  return { red:cssColor("--poor-soft"), yellow:cssColor("--warn-soft"),
+           green:cssColor("--good-soft"), gray:cssColor("--neutral-soft") }[key];
+}
+
+/* ---------- input rows ---------- */
+var rowsEl = document.getElementById("rows");
+function addRow(name,x,y){
+  var tr = document.createElement("tr");
+  tr.innerHTML =
+    '<td><input type="text" class="in-name" placeholder="例:RF Architect" autocomplete="off"></td>'+
+    '<td class="num-col"><input type="number" class="in-x" min="1" max="25" step="1" inputmode="numeric" placeholder="5~25"></td>'+
+    '<td class="num-col"><input type="number" class="in-y" min="1" max="25" step="1" inputmode="numeric" placeholder="5~25"></td>'+
+    '<td class="del-col"><button type="button" class="del-btn" aria-label="刪除此列" title="刪除此列">✕</button></td>';
+  tr.querySelector(".in-name").value = name || "";
+  if(x != null) tr.querySelector(".in-x").value = x;
+  if(y != null) tr.querySelector(".in-y").value = y;
+  tr.querySelector(".del-btn").addEventListener("click", function(){
+    if(rowsEl.rows.length > 1) tr.remove();
+    else { tr.querySelectorAll("input").forEach(function(i){ i.value=""; }); }
+  });
+  rowsEl.appendChild(tr);
+}
+function clearRows(n){
+  rowsEl.innerHTML = "";
+  for(var i=0;i<n;i++) addRow();
+}
+
+/* ---------- read & validate ---------- */
+var errEl = document.getElementById("errMsg");
+function readData(){
+  errEl.style.display = "none";
+  document.querySelectorAll(".field-err").forEach(function(el){ el.classList.remove("field-err"); });
+  var items = [], errs = [];
+  Array.prototype.forEach.call(rowsEl.rows, function(tr, idx){
+    var nameIn = tr.querySelector(".in-name"),
+        xIn = tr.querySelector(".in-x"),
+        yIn = tr.querySelector(".in-y");
+    var name = nameIn.value.trim(), xs = xIn.value.trim(), ys = yIn.value.trim();
+    if(!name && !xs && !ys) return;               /* fully empty row: skip */
+    var x = parseFloat(xs), y = parseFloat(ys), bad = false;
+    if(!name){ nameIn.classList.add("field-err"); bad = true; }
+    if(!(x>=1 && x<=25)){ xIn.classList.add("field-err"); bad = true; }
+    if(!(y>=1 && y<=25)){ yIn.classList.add("field-err"); bad = true; }
+    if(bad){ errs.push("第 "+(idx+1)+" 列"); return; }
+    items.push({ name:name, x:x, y:y, quad:quadOf(x,y) });
+  });
+  if(errs.length){
+    errEl.textContent = "請確認 "+errs.join("、")+":職位名稱不可空白,分數需為 1~25 之間的數字(標準區間 5~25)。";
+    errEl.style.display = "block";
+    return null;
+  }
+  if(!items.length){
+    errEl.textContent = "請至少填入一個職位(職位名稱 + 兩個分數)。";
+    errEl.style.display = "block";
+    return null;
+  }
+  return items;
+}
+
+/* ---------- chart ---------- */
+var SVGNS = "http://www.w3.org/2000/svg";
+var chartBox = document.getElementById("chartBox");
+var tooltip = document.getElementById("tooltip");
+var W = 860, H = 620,
+    M = { l:96, r:36, t:44, b:84 },
+    PW = W - M.l - M.r, PH = H - M.t - M.b;
+function sx(v){ return M.l + (v / MAXV) * PW; }
+function sy(v){ return M.t + PH - (v / MAXV) * PH; }
+
+function el(tag, attrs, text){
+  var n = document.createElementNS(SVGNS, tag);
+  for(var k in attrs) n.setAttribute(k, attrs[k]);
+  if(text != null) n.textContent = text;
+  return n;
+}
+
+function drawChart(items, dept){
+  var old = chartBox.querySelector("svg");
+  if(old) old.remove();
+
+  var svg = el("svg", { viewBox:"0 0 "+W+" "+H, role:"img",
+    "aria-label":(dept?dept+" ":"")+"人才風險地圖:X 軸職位重要性,Y 軸人才風險,各職位以顏色標示風險象限" });
+  var ink = cssColor("--ink"), ink2 = cssColor("--ink-2"), ink3 = cssColor("--ink-3"),
+      line = cssColor("--line"), card = cssColor("--card");
+  svg.style.font = '13px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+
+  /* quadrant background tints */
+  var mx = sx(MID), my = sy(MID);
+  svg.appendChild(el("rect",{x:M.l, y:M.t, width:mx-M.l, height:my-M.t, fill:quadSoft("yellow"), opacity:.45}));
+  svg.appendChild(el("rect",{x:mx, y:M.t, width:M.l+PW-mx, height:my-M.t, fill:quadSoft("red"), opacity:.45}));
+  svg.appendChild(el("rect",{x:M.l, y:my, width:mx-M.l, height:M.t+PH-my, fill:quadSoft("gray"), opacity:.45}));
+  svg.appendChild(el("rect",{x:mx, y:my, width:M.l+PW-mx, height:M.t+PH-my, fill:quadSoft("green"), opacity:.45}));
+
+  /* grid every 5 */
+  for(var g=5; g<=25; g+=5){
+    svg.appendChild(el("line",{x1:sx(g), y1:M.t, x2:sx(g), y2:M.t+PH, stroke:line, "stroke-width":1}));
+    svg.appendChild(el("line",{x1:M.l, y1:sy(g), x2:M.l+PW, y2:sy(g), stroke:line, "stroke-width":1}));
+    svg.appendChild(el("text",{x:sx(g), y:M.t+PH+22, "text-anchor":"middle", fill:ink3}, g));
+    svg.appendChild(el("text",{x:M.l-12, y:sy(g)+4, "text-anchor":"end", fill:ink3}, g));
+  }
+
+  /* mid dividers at 15 */
+  svg.appendChild(el("line",{x1:mx, y1:M.t, x2:mx, y2:M.t+PH, stroke:ink2, "stroke-width":1.5, "stroke-dasharray":"6 5"}));
+  svg.appendChild(el("line",{x1:M.l, y1:my, x2:M.l+PW, y2:my, stroke:ink2, "stroke-width":1.5, "stroke-dasharray":"6 5"}));
+
+  /* frame */
+  svg.appendChild(el("rect",{x:M.l, y:M.t, width:PW, height:PH, fill:"none", stroke:ink3, "stroke-width":1.25}));
+
+  /* axis titles */
+  svg.appendChild(el("text",{x:M.l+PW/2, y:H-30, "text-anchor":"middle", fill:ink,
+    "font-weight":"600", "font-size":"15"}, "職位重要性(低 ←→ 高)"));
+  var yT = el("text",{x:30, y:M.t+PH/2, "text-anchor":"middle", fill:ink,
+    "font-weight":"600", "font-size":"15",
+    transform:"rotate(-90 30 "+(M.t+PH/2)+")"}, "人才風險(低 ←→ 高)");
+  svg.appendChild(yT);
+
+  /* quadrant corner labels */
+  function corner(x,y,anchor,key,desc){
+    var t = el("text",{x:x, y:y, "text-anchor":anchor, fill:quadFill(key), "font-weight":"700", "font-size":"14"}, QUAD[key].name);
+    svg.appendChild(t);
+    svg.appendChild(el("text",{x:x, y:y+18, "text-anchor":anchor, fill:ink3, "font-size":"12"}, desc));
+  }
+  corner(M.l+14,    M.t+24, "start", "yellow", "低重要 × 高風險");
+  corner(M.l+PW-14, M.t+24, "end",   "red",    "高重要 × 高風險");
+  corner(M.l+14,    M.t+PH-26, "start", "gray",  "低重要 × 低風險");
+  corner(M.l+PW-14, M.t+PH-26, "end",   "green", "高重要 × 低風險");
+
+  /* spread points that share identical coordinates */
+  var groups = {};
+  items.forEach(function(d){
+    var k = d.x+"_"+d.y;
+    (groups[k] = groups[k] || []).push(d);
+  });
+  var pts = [];
+  Object.keys(groups).forEach(function(k){
+    var g = groups[k];
+    g.forEach(function(d,i){
+      var off = (i - (g.length-1)/2) * 20;
+      pts.push({ d:d, cx:sx(d.x)+off, cy:sy(d.y) });
+    });
+  });
+
+  /* label placement: above by default, flip below near top edge; stagger when close */
+  pts.sort(function(a,b){ return a.cx-b.cx || a.cy-b.cy; });
+  var placed = [];
+  /* reserve the four quadrant corner captions so point labels avoid them */
+  [ {x:M.l+14, a:"start", y:M.t+24}, {x:M.l+PW-14, a:"end", y:M.t+24},
+    {x:M.l+14, a:"start", y:M.t+PH-26}, {x:M.l+PW-14, a:"end", y:M.t+PH-26}
+  ].forEach(function(c){
+    var w = 130, cx = c.a==="start" ? c.x+w/2 : c.x-w/2;
+    placed.push({x:cx, y:c.y, w:w});
+    placed.push({x:cx, y:c.y+18, w:w});
+  });
+  function collides(bx){
+    return placed.some(function(p){
+      return Math.abs(p.x-bx.x) < (p.w+bx.w)/2 && Math.abs(p.y-bx.y) < 18;
+    });
+  }
+  pts.forEach(function(p){
+    var w = Math.max(40, p.d.name.length*13.5);
+    var cands = [
+      {x:p.cx, y:p.cy-18}, {x:p.cx, y:p.cy+26},
+      {x:p.cx+w/2+16, y:p.cy+4}, {x:p.cx-w/2-16, y:p.cy+4}
+    ];
+    var pick = cands[0];
+    for(var i=0;i<cands.length;i++){
+      var c = {x:cands[i].x, y:cands[i].y, w:w};
+      if(cands[i].y < M.t+12 || cands[i].y > M.t+PH-4) continue;
+      if(!collides(c)){ pick = cands[i]; break; }
+    }
+    placed.push({x:pick.x, y:pick.y, w:w});
+    p.lx = pick.x; p.ly = pick.y;
+  });
+
+  /* marks */
+  pts.forEach(function(p){
+    var fill = quadFill(p.d.quad);
+    var gEl = el("g",{});
+    /* halo hit-target */
+    var halo = el("circle",{cx:p.cx, cy:p.cy, r:16, fill:"transparent"});
+    gEl.appendChild(halo);
+    gEl.appendChild(el("circle",{cx:p.cx, cy:p.cy, r:11, fill:"none", stroke:card, "stroke-width":4}));
+    gEl.appendChild(el("circle",{cx:p.cx, cy:p.cy, r:9, fill:fill, stroke:ink, "stroke-width":1,
+      "stroke-opacity":.35}));
+    var lbl = el("text",{x:p.lx, y:p.ly, "text-anchor":"middle", fill:ink,
+      "font-weight":"600", "font-size":"13", "paint-order":"stroke",
+      stroke:card, "stroke-width":3, "stroke-linejoin":"round"}, p.d.name);
+    gEl.appendChild(lbl);
+    gEl.style.cursor = "default";
+    gEl.addEventListener("mousemove", function(ev){ showTip(ev, p.d); });
+    gEl.addEventListener("mouseleave", hideTip);
+    svg.appendChild(gEl);
+  });
+
+  chartBox.appendChild(svg);
+}
+
+function showTip(ev, d){
+  var q = QUAD[d.quad];
+  tooltip.innerHTML =
+    '<span class="tt-name"></span><br>'+
+    '職位重要性 <strong>'+d.x+'</strong> ・ 人才風險 <strong>'+d.y+'</strong><br>'+
+    '<span class="tt-quad"></span><br><span class="tt-act"></span>';
+  tooltip.querySelector(".tt-name").textContent = d.name;
+  var qEl = tooltip.querySelector(".tt-quad");
+  qEl.textContent = q.name + (q.risk!=="—" ? "("+q.risk+")" : "");
+  qEl.style.color = quadFill(d.quad);
+  tooltip.querySelector(".tt-act").textContent = q.action;
+  tooltip.style.display = "block";
+  var box = chartBox.getBoundingClientRect();
+  var tx = ev.clientX - box.left + 16, ty = ev.clientY - box.top + 16;
+  if(tx + tooltip.offsetWidth  > box.width)  tx -= tooltip.offsetWidth + 32;
+  if(ty + tooltip.offsetHeight > box.height) ty -= tooltip.offsetHeight + 32;
+  tooltip.style.left = tx+"px"; tooltip.style.top = ty+"px";
+}
+function hideTip(){ tooltip.style.display = "none"; }
+
+/* ---------- summary table ---------- */
+function renderSummary(items, dept){
+  var body = document.getElementById("summaryBody");
+  body.innerHTML = "";
+  var sorted = items.slice().sort(function(a,b){
+    var qa = QUAD[a.quad].order, qb = QUAD[b.quad].order;
+    if(qa!==qb) return qa-qb;
+    return (b.x+b.y)-(a.x+a.y);
+  });
+  sorted.forEach(function(d,i){
+    var q = QUAD[d.quad];
+    var tr = document.createElement("tr");
+    var pill = '<span class="pill '+q.cls+'"></span>';
+    tr.innerHTML =
+      '<td class="score">'+(i+1)+'</td>'+
+      '<td class="pos-name"></td>'+
+      '<td class="score">'+d.x+'</td>'+
+      '<td class="score">'+d.y+'</td>'+
+      '<td>'+pill+'</td>'+
+      '<td class="action-cell"></td>';
+    tr.querySelector(".pos-name").textContent = d.name;
+    tr.querySelector(".pill").textContent = q.name + (q.risk!=="—" ? "・"+q.risk : "");
+    tr.querySelector(".action-cell").textContent = q.action;
+    body.appendChild(tr);
+  });
+  var counts = { red:0, yellow:0, green:0, gray:0 };
+  items.forEach(function(d){ counts[d.quad]++; });
+  document.getElementById("summarySub").textContent =
+    (dept ? dept+" ・ " : "") + "共 "+items.length+" 個職位:最危險區 "+counts.red+
+    "、可觀察 "+counts.yellow+"、穩定區 "+counts.green+"、一般區 "+counts.gray+
+    "。依「優先處理 → 例行管理」排序。";
+}
+
+/* ---------- actions ---------- */
+document.getElementById("drawBtn").addEventListener("click", function(){
+  var items = readData();
+  if(!items) return;
+  var dept = document.getElementById("deptName").value.trim();
+  document.getElementById("deptTag").textContent = dept ? "部門:"+dept : "";
+  drawChart(items, dept);
+  renderSummary(items, dept);
+  var result = document.getElementById("result");
+  result.style.display = "block";
+  result.scrollIntoView({ behavior:"smooth", block:"start" });
+});
+
+document.getElementById("addRowBtn").addEventListener("click", function(){ addRow(); });
+
+document.getElementById("sampleBtn").addEventListener("click", function(){
+  document.getElementById("deptName").value = "HW Center";
+  rowsEl.innerHTML = "";
+  addRow("RF Architect", 23, 25);
+  addRow("HW1 Manager", 20, 6);
+  addRow("PM Lead", 12, 2);
+  addRow("Test Lead", 10, 18);
+  addRow("FW Engineer", 18, 16);
+  errEl.style.display = "none";
+});
+
+document.getElementById("clearBtn").addEventListener("click", function(){
+  document.getElementById("deptName").value = "";
+  clearRows(3);
+  errEl.style.display = "none";
+  document.getElementById("result").style.display = "none";
+});
+
+document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+document.getElementById("pngBtn").addEventListener("click", function(){
+  var svg = chartBox.querySelector("svg");
+  if(!svg) return;
+  var clone = svg.cloneNode(true);
+  clone.setAttribute("width", W*2); clone.setAttribute("height", H*2);
+  var xml = new XMLSerializer().serializeToString(clone);
+  var img = new Image();
+  img.onload = function(){
+    var cv = document.createElement("canvas");
+    cv.width = W*2; cv.height = H*2;
+    var ctx = cv.getContext("2d");
+    ctx.fillStyle = cssColor("--card");
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(img,0,0,cv.width,cv.height);
+    var a = document.createElement("a");
+    var dept = document.getElementById("deptName").value.trim();
+    a.download = (dept ? dept+"-" : "")+"人才風險地圖.png";
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  };
+  img.src = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
+});
+
+/* ---------- init ---------- */
+clearRows(3);
+})();
+</script>
+</body>
+</html>
