@@ -230,7 +230,7 @@ table.summary tr:last-child td{border-bottom:none}
 
   <div class="rows-head">
     <span class="field-label" style="margin:0">職位清單</span>
-    <span class="hint">X 軸來自步驟一「職位重要性」;Y 軸=步驟二 Risk × 接班風險。15 分(含)以上視為「高」。</span>
+    <span class="hint">X 軸來自步驟一「職位重要性」;Y 軸=步驟二 Risk × 接班風險。<span class="mid-val">10</span> 分(含)以上視為「高」。</span>
   </div>
 
   <div class="table-scroll">
@@ -273,7 +273,7 @@ table.summary tr:last-child td{border-bottom:none}
       <span class="key"><span class="dot q-green"></span>綠色=低風險 穩定區(高重要 × 低風險)</span>
       <span class="key"><span class="dot q-gray"></span>灰色 一般區(低重要 × 低風險)</span>
     </div>
-    <p class="legend-note">象限分界:兩軸皆以 15 分為界,15 分(含)以上視為「高」。<span class="no-print">將滑鼠移到圓點上可查看各職位明細。</span></p>
+    <p class="legend-note">象限分界:兩軸皆以 <span class="mid-val">10</span> 分為界,<span class="mid-val">10</span> 分(含)以上視為「高」。<span class="no-print">將滑鼠移到圓點上可查看各職位明細。</span></p>
     <div class="actions no-print">
       <button class="btn ghost" id="pngBtn">下載 PNG 圖檔</button>
       <button class="btn ghost" id="printBtn">列印/存成 PDF</button>
@@ -313,7 +313,7 @@ table.summary tr:last-child td{border-bottom:none}
 "use strict";
 
 /* ---------- quadrant definitions ---------- */
-var MID = 15, MAXV = 25;
+var MID = 10, MAXV = 25;
 var QUAD = {
   red:    { name:"最危險區", risk:"高風險", cls:"q-red",    order:1,
             action:"優先處理:接班人、備援、知識移轉、留才" },
@@ -439,7 +439,7 @@ function drawChart(items, dept){
     svg.appendChild(el("text",{x:M.l-12, y:sy(g)+4, "text-anchor":"end", fill:ink3}, g));
   }
 
-  /* mid dividers at 15 */
+  /* mid dividers at MID */
   svg.appendChild(el("line",{x1:mx, y1:M.t, x2:mx, y2:M.t+PH, stroke:ink2, "stroke-width":1.5, "stroke-dasharray":"6 5"}));
   svg.appendChild(el("line",{x1:M.l, y1:my, x2:M.l+PW, y2:my, stroke:ink2, "stroke-width":1.5, "stroke-dasharray":"6 5"}));
 
@@ -610,8 +610,8 @@ document.getElementById("sampleBtn").addEventListener("click", function(){
   rowsEl.innerHTML = "";
   addRow("RF Architect", 23, 25);
   addRow("HW1 Manager", 20, 6);
-  addRow("PM Lead", 12, 2);
-  addRow("Test Lead", 10, 18);
+  addRow("PM Lead", 8, 2);
+  addRow("Test Lead", 7, 18);
   addRow("FW Engineer", 18, 16);
   errEl.style.display = "none";
 });
@@ -820,6 +820,7 @@ document.getElementById("sumPngBtn").addEventListener("click", function(){
 });
 
 /* ---------- init ---------- */
+document.querySelectorAll(".mid-val").forEach(function(el){ el.textContent = MID; });
 clearRows(3);
 })();
 </script>
