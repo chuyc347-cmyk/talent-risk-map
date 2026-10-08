@@ -191,10 +191,15 @@ table.summary tr:last-child td{border-bottom:none}
 
 /* ---------- print ---------- */
 @media print{
-  body{background:#fff; color:#000}
+  body{background:#fff; color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact}
   .brandbar,.site-head,.input-card,.actions,.site-foot,.no-print{display:none !important}
   #result{display:block !important; margin-top:0}
-  .chart-card,.summary-card{box-shadow:none; border-color:#bbb; break-inside:avoid}
+  .chart-card,.summary-card{box-shadow:none; border-color:#bbb; break-inside:avoid; margin:0}
+  body.print-map .summary-card,
+  body.print-summary .chart-card{display:none !important}
+  .table-scroll{overflow:visible}
+  table.summary{min-width:0}
+  table.summary tr{break-inside:avoid}
 }
 </style>
 </head>
@@ -268,7 +273,7 @@ table.summary tr:last-child td{border-bottom:none}
       <span class="key"><span class="dot q-green"></span>綠色=低風險 穩定區(高重要 × 低風險)</span>
       <span class="key"><span class="dot q-gray"></span>灰色 一般區(低重要 × 低風險)</span>
     </div>
-    <p class="legend-note">象限分界:兩軸皆以 15 分為界,15 分(含)以上視為「高」。將滑鼠移到圓點上可查看各職位明細。</p>
+    <p class="legend-note">象限分界:兩軸皆以 15 分為界,15 分(含)以上視為「高」。<span class="no-print">將滑鼠移到圓點上可查看各職位明細。</span></p>
     <div class="actions no-print">
       <button class="btn ghost" id="pngBtn">下載 PNG 圖檔</button>
       <button class="btn ghost" id="printBtn">列印/存成 PDF</button>
@@ -287,6 +292,10 @@ table.summary tr:last-child td{border-bottom:none}
         </thead>
         <tbody id="summaryBody"></tbody>
       </table>
+    </div>
+    <div class="actions no-print">
+      <button class="btn ghost" id="sumPngBtn">下載 PNG 圖檔</button>
+      <button class="btn ghost" id="sumPrintBtn">列印/存成 PDF</button>
     </div>
   </div>
 </section>
@@ -573,10 +582,11 @@ function renderSummary(items, dept){
   });
   var counts = { red:0, yellow:0, green:0, gray:0 };
   items.forEach(function(d){ counts[d.quad]++; });
-  document.getElementById("summarySub").textContent =
-    (dept ? dept+" ・ " : "") + "共 "+items.length+" 個職位:最危險區 "+counts.red+
+  var sub = (dept ? dept+" ・ " : "") + "共 "+items.length+" 個職位:最危險區 "+counts.red+
     "、可觀察 "+counts.yellow+"、穩定區 "+counts.green+"、一般區 "+counts.gray+
     "。依「優先處理 → 例行管理」排序。";
+  document.getElementById("summarySub").textContent = sub;
+  return { sorted:sorted, sub:sub };
 }
 
 /* ---------- actions ---------- */
@@ -586,7 +596,8 @@ document.getElementById("drawBtn").addEventListener("click", function(){
   var dept = document.getElementById("deptName").value.trim();
   document.getElementById("deptTag").textContent = dept ? "部門:"+dept : "";
   drawChart(items, dept);
-  renderSummary(items, dept);
+  var summary = renderSummary(items, dept);
+  last = { items:items, dept:dept, sorted:summary.sorted, sub:summary.sub };
   var result = document.getElementById("result");
   result.style.display = "block";
   result.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -612,12 +623,58 @@ document.getElementById("clearBtn").addEventListener("click", function(){
   document.getElementById("result").style.display = "none";
 });
 
-document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+/* ---------- export: PNG & print (always rendered in the light theme) ---------- */
+var last = null;
+var root = document.documentElement;
+
+function forceLight(){
+  var saved = root.getAttribute("data-theme");
+  root.setAttribute("data-theme", "light");
+  if(last) drawChart(last.items, last.dept);
+  return function restore(){
+    if(saved === null) root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", saved);
+    if(last) drawChart(last.items, last.dept);
+  };
+}
+
+function fileName(suffix){
+  return (last && last.dept ? last.dept+"-" : "") + suffix + ".png";
+}
+
+function downloadCanvas(cv, name){
+  var a = document.createElement("a");
+  a.download = name;
+  a.href = cv.toDataURL("image/png");
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+var pendingRestore = null;
+function finishPrint(){
+  document.body.classList.remove("print-map", "print-summary");
+  if(pendingRestore){ pendingRestore(); pendingRestore = null; }
+}
+window.addEventListener("afterprint", finishPrint);
+
+function printSection(which){
+  if(!last) return;
+  finishPrint();
+  pendingRestore = forceLight();
+  document.body.classList.add("print-"+which);
+  window.print();
+}
+
+document.getElementById("printBtn").addEventListener("click", function(){ printSection("map"); });
+document.getElementById("sumPrintBtn").addEventListener("click", function(){ printSection("summary"); });
 
 document.getElementById("pngBtn").addEventListener("click", function(){
-  var svg = chartBox.querySelector("svg");
-  if(!svg) return;
-  var clone = svg.cloneNode(true);
+  if(!last) return;
+  var restore = forceLight();
+  var clone = chartBox.querySelector("svg").cloneNode(true);
+  var bg = cssColor("--card");
+  restore();
   clone.setAttribute("width", W*2); clone.setAttribute("height", H*2);
   var xml = new XMLSerializer().serializeToString(clone);
   var img = new Image();
@@ -625,16 +682,141 @@ document.getElementById("pngBtn").addEventListener("click", function(){
     var cv = document.createElement("canvas");
     cv.width = W*2; cv.height = H*2;
     var ctx = cv.getContext("2d");
-    ctx.fillStyle = cssColor("--card");
+    ctx.fillStyle = bg;
     ctx.fillRect(0,0,cv.width,cv.height);
     ctx.drawImage(img,0,0,cv.width,cv.height);
-    var a = document.createElement("a");
-    var dept = document.getElementById("deptName").value.trim();
-    a.download = (dept ? dept+"-" : "")+"人才風險地圖.png";
-    a.href = cv.toDataURL("image/png");
-    a.click();
+    downloadCanvas(cv, fileName("人才風險地圖"));
   };
   img.src = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
+});
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+/* Latin words stay whole; CJK characters may break anywhere */
+function wrapText(ctx, text, maxW){
+  var tokens = text.match(/[A-Za-z0-9][\w.\-\/&+#]*|\s+|[\s\S]/g) || [];
+  var lines = [], line = "";
+  tokens.forEach(function(tok){
+    if(line && ctx.measureText(line+tok).width > maxW){
+      lines.push(line.replace(/\s+$/, ""));
+      line = /^\s+$/.test(tok) ? "" : tok;
+    } else {
+      line += tok;
+    }
+    while(ctx.measureText(line).width > maxW && line.length > 1){
+      var cut = line.length - 1;
+      while(cut > 1 && ctx.measureText(line.slice(0, cut)).width > maxW) cut--;
+      lines.push(line.slice(0, cut));
+      line = line.slice(cut);
+    }
+  });
+  if(line.trim()) lines.push(line.replace(/\s+$/, ""));
+  return lines.length ? lines : [""];
+}
+
+function drawSummaryPng(){
+  var restore = forceLight();
+  var C = {
+    card:cssColor("--card"), ink:cssColor("--ink"), ink2:cssColor("--ink-2"),
+    ink3:cssColor("--ink-3"), line:cssColor("--line")
+  };
+  var fills = {}, softs = {};
+  ["red","yellow","green","gray"].forEach(function(k){ fills[k] = quadFill(k); softs[k] = quadSoft(k); });
+  restore();
+
+  var FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif';
+  var SERIF = '"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif';
+  var S = 2, PW = 1200, PAD = 44;
+  var cols = [
+    { title:"優先序",          w:76 },
+    { title:"職位名稱",        w:230 },
+    { title:"職位重要性 (X)",  w:140 },
+    { title:"人才風險 (Y)",    w:130 },
+    { title:"象限",            w:200 },
+    { title:"建議行動",        w:0 }
+  ];
+  var used = cols.reduce(function(s,c){ return s+c.w; }, 0);
+  cols[5].w = PW - PAD*2 - used;
+
+  var cv = document.createElement("canvas");
+  var ctx = cv.getContext("2d");
+  var LH = 24, ROWPAD = 14;
+
+  /* measure */
+  ctx.font = "15px "+FONT;
+  var subLines = wrapText(ctx, last.sub, PW - PAD*2);
+  var rows = last.sorted.map(function(d){
+    ctx.font = "16px "+FONT;
+    var nameLines = wrapText(ctx, d.name, cols[1].w - 16);
+    ctx.font = "15px "+FONT;
+    var actLines = wrapText(ctx, QUAD[d.quad].action, cols[5].w - 4);
+    var n = Math.max(nameLines.length, actLines.length, 1);
+    return { d:d, nameLines:nameLines, actLines:actLines, h:n*LH + ROWPAD*2 };
+  });
+  var headTop = PAD + 40 + subLines.length*22 + 24;
+  var headH = 40;
+  var bodyH = rows.reduce(function(s,r){ return s+r.h; }, 0);
+  var PH = headTop + headH + bodyH + PAD;
+
+  cv.width = PW*S; cv.height = PH*S;
+  ctx.scale(S, S);
+  ctx.fillStyle = C.card; ctx.fillRect(0, 0, PW, PH);
+  ctx.textBaseline = "alphabetic";
+
+  /* title & subtitle */
+  ctx.fillStyle = C.ink; ctx.font = "700 26px "+SERIF;
+  ctx.fillText("職位風險摘要", PAD, PAD + 26);
+  ctx.fillStyle = C.ink3; ctx.font = "15px "+FONT;
+  subLines.forEach(function(l, i){ ctx.fillText(l, PAD, PAD + 58 + i*22); });
+
+  /* header */
+  var x = PAD;
+  ctx.font = "600 14px "+FONT; ctx.fillStyle = C.ink3;
+  cols.forEach(function(c){ ctx.fillText(c.title, x, headTop + 24); x += c.w; });
+  ctx.fillStyle = C.line;
+  ctx.fillRect(PAD, headTop + headH - 1, PW - PAD*2, 1);
+
+  /* rows */
+  var y = headTop + headH;
+  rows.forEach(function(r, i){
+    var d = r.d, q = QUAD[d.quad], base = y + ROWPAD + 17;
+    var cx = PAD;
+    ctx.fillStyle = C.ink; ctx.font = "16px "+FONT;
+    ctx.fillText(String(i+1), cx, base); cx += cols[0].w;
+    r.nameLines.forEach(function(l, k){ ctx.fillText(l, cx, base + k*LH); }); cx += cols[1].w;
+    ctx.fillText(String(d.x), cx, base); cx += cols[2].w;
+    ctx.fillText(String(d.y), cx, base); cx += cols[3].w;
+
+    var label = q.name + (q.risk!=="—" ? "・"+q.risk : "");
+    ctx.font = "600 14px "+FONT;
+    var pw = ctx.measureText(label).width + 40, ph = 26, py = base - 18;
+    ctx.fillStyle = softs[d.quad]; roundRect(ctx, cx, py, pw, ph, ph/2); ctx.fill();
+    ctx.fillStyle = fills[d.quad];
+    ctx.beginPath(); ctx.arc(cx + 16, py + ph/2, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillText(label, cx + 27, py + 18);
+    cx += cols[4].w;
+
+    ctx.fillStyle = C.ink2; ctx.font = "15px "+FONT;
+    r.actLines.forEach(function(l, k){ ctx.fillText(l, cx, base + k*LH); });
+
+    y += r.h;
+    if(i < rows.length - 1){ ctx.fillStyle = C.line; ctx.fillRect(PAD, y - 1, PW - PAD*2, 1); }
+  });
+
+  return cv;
+}
+
+document.getElementById("sumPngBtn").addEventListener("click", function(){
+  if(!last) return;
+  downloadCanvas(drawSummaryPng(), fileName("職位風險摘要"));
 });
 
 /* ---------- init ---------- */
